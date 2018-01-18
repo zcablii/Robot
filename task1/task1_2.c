@@ -193,6 +193,7 @@ void drawH()
 void drawK()
 {
 	drive_goto(25, -26);
+	drive_goto(8, 8);
 	simulator_startNewSmokeTrail();
 	drive_goto(40, 40);
 	simulator_stopSmokeTrail();	
