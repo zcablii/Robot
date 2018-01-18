@@ -12,36 +12,32 @@ int main () {
    {
    		if (str[i] == 'a'){
    			drawA();
-}
+		}
 
-   		else if (str[i] == 'e'){
+   		if (str[i] == 'e'){
    			drawE();
-}
+		}		
 
-   		else if (str[i] == 'f'){
+   		if (str[i] == 'f'){
    			drawF();
-}
+		}
 
-   		 else if (str[i] == 'h'){
+   		if (str[i] == 'h'){
    			drawH();
-}
+		}
 
-   		 else if (str[i] == 'i'){
+   		if (str[i] == 'i'){
    			drawI();
-}
+		}
 
-   		 else if (str[i] == 'k'){
+   		if (str[i] == 'k'){
    			drawK();
-}
+		}
 
-   		else if (str[i] == 'l'){
-   			drawL();}
-		else{ printf(" ");
-
-
-
-   		}
-
+   		if (str[i] == 'l'){
+   			drawL();
+		}
+		
    		
    }
    
@@ -182,7 +178,7 @@ void drawH()
 	simulator_stopSmokeTrail();	
 	drive_goto(-8, -8);
 	drive_goto(-26, 25);
-	drive_goto(-12, -12);	
+	drive_goto(-10, -10);	
 	simulator_startNewSmokeTrail();
 	drive_goto(40, 40);
 	simulator_stopSmokeTrail();	
@@ -211,6 +207,4 @@ void drawK()
 	simulator_stopSmokeTrail();	
 	drive_goto(11, -10);
 	drive_goto(20, 20);
-	
-
 }
