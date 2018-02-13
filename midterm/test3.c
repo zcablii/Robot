@@ -55,15 +55,11 @@ double getAngleChange()
 // distance center circle (position change) to middle of robot
 double radiusMiddle(double spotAngle)
 {
-  if (spotAngle != 0)
+  if(spotAngle != 0)
   {
     double radiusLeft = spotDistance[0] / spotAngle;        // radius * radian = arcDistance
     double radiusRight = spotDistance[1] / spotAngle;
     return (radiusLeft + radiusRight) / 2;
-  }
-  else
-  {
-      return -1;
   }
 }
 
@@ -74,14 +70,9 @@ void getCoordinates()
   double deltaAngle = getAngleChange();
   double r = radiusMiddle(spotAngle);
 
-  if (deltaAngle == 0) {
+  if (deltaAngle == 0 || spotAngle == 0) {
     coord[0] = spotDistance[0];
     coord[1] = 0;
-  }
-  else if(r == -1)
-  {
-    coord[0] = coord[0];
-    coord[1] = coord[1];
   }
   else {
     coord[0] = r * sin(spotAngle + deltaAngle) - r * sin(spotAngle);
@@ -237,11 +228,15 @@ int main() {
   driveForward();
 
   double displacement = sqrt(pow(dX, 2) + pow(dY, 2));
-  double angle = atan(dY / dX);
+  int currentLeftTicks;
+  int currentRightTicks;
+  drive_getTicks(&currentLeftTicks, &currentRightTicks);
+  double angle = (currentLeftTicks - currentRightTicks)/0.568;
   printf("displacement: %.2f, angle: %.2f\n", displacement, angle);
 
   drive_goto(52, -51);
 
   returnBack();
+  drive_goto(30,30);
   return 0;
 }
