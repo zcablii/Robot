@@ -3,16 +3,13 @@
 #include "ping.h"
 #include <stdlib.h>
 
-#define FORWARD_SPEED 10
-#define BACKWARD_SPEED 82
-#define KP_FORWARD 1.5
-#define KP_BACKWARD 3.7
-#define RETURN_BIAS 1
-
-#define INC_DELAY_FACTOR 30
-
 #define ROBOT_WIDTH 105.8
-#define TICKS_TO_MM 3.249
+#define MM_PER_TICK 3.249
+#define FORWARD_SPEED 10
+#define GOBACK_SPEED 160
+#define KP_F 1.5
+#define KP_B 21.5
+#define RECORD_FREQ 10
 
 typedef struct node {
   int leftTicks;
@@ -42,8 +39,8 @@ void getDistanceWheels()
 {
   int ticksList[2];
   drive_getTicks(&ticksList[0], &ticksList[1]);
-  distanceWheels[0] = (double) (ticksList[0]) * TICKS_TO_MM;
-  distanceWheels[1] = (double) (ticksList[1]) * TICKS_TO_MM;
+  distanceWheels[0] = (double) (ticksList[0]) * MM_PER_TICK;
+  distanceWheels[1] = (double) (ticksList[1]) * MM_PER_TICK;
 }
 
 // Radian distanceTravelled[left] - distanceTravalled[right] / distanceBtwWheels
@@ -55,11 +52,15 @@ double getAngleChange()
 // distance center circle (position change) to middle of robot
 double radiusMiddle(double spotAngle)
 {
-  if(spotAngle != 0)
+  if (spotAngle != 0)
   {
     double radiusLeft = spotDistance[0] / spotAngle;        // radius * radian = arcDistance
     double radiusRight = spotDistance[1] / spotAngle;
     return (radiusLeft + radiusRight) / 2;
+  }
+  else
+  {
+      return 999;
   }
 }
 
@@ -70,7 +71,7 @@ void getCoordinates()
   double deltaAngle = getAngleChange();
   double r = radiusMiddle(spotAngle);
 
-  if (deltaAngle == 0 || spotAngle == 0) {
+  if (deltaAngle == 0) {
     coord[0] = spotDistance[0];
     coord[1] = 0;
   }
@@ -91,7 +92,7 @@ void calculateCoordinates()
   prevDistance[0] = distanceWheels[0];
   prevDistance[1] = distanceWheels[1];
 
-  getCoordinates();
+  getCoordinates(); 
   dX += coord[0];
   dY += coord[1];
   spotAngle = coord[2];
@@ -143,12 +144,12 @@ void driveForward() {
   // and keeping a delay_increment to simulate time delay with each push
   for (int delay_increment = 0; ping_cm(8) > 11; delay_increment++){
     // P controller
-    speedCorrection = (infraredDelta() * KP_FORWARD) / 2;
+    speedCorrection = (infraredDelta() * KP_F) / 2;
     // Apply speed correction
     drive_speed(FORWARD_SPEED + speedCorrection, FORWARD_SPEED - speedCorrection);
     // Pushing right and left wheel's ticks in reverse order.
     // This is needed to return back correctly.
-    if (delay_increment % INC_DELAY_FACTOR == 0) {
+    if (delay_increment % RECORD_FREQ == 0) {
       int currentLeft;
       int currentRight;
       tickDeltas(&currentLeft, &currentRight);
@@ -198,14 +199,14 @@ void returnBack() {
 
     // Automatically adjust the speed of the robot by continuosly comparing 
     // the current ticks with the corresponding target ticks previously stored on the stack.
-    // The RETURN_BIAS is introduced because of possible errors in the sensors data.
-    while (currentLeftTicks <= (leftTicksRemaining + RETURN_BIAS) 
-            && currentRightTicks <= (rightTicksRemaining + RETURN_BIAS)) {
+    // The 1 is introduced because of possible errors in the sensors data.
+    while (currentLeftTicks <= (leftTicksRemaining + 1) 
+            && currentRightTicks <= (rightTicksRemaining + 1)) {
       // P Controller
-      leftCorrection = KP_BACKWARD * (currentLeftTicks - (leftTicksRemaining + RETURN_BIAS));
-      rightCorrection = KP_BACKWARD * (currentRightTicks - (rightTicksRemaining + RETURN_BIAS));
+      leftCorrection = KP_B * (currentLeftTicks - (leftTicksRemaining + 1));
+      rightCorrection = KP_B * (currentRightTicks - (rightTicksRemaining + 1));
       // Apply speed corrections
-      drive_speed(BACKWARD_SPEED + leftCorrection, BACKWARD_SPEED + rightCorrection);
+      drive_speed(GOBACK_SPEED + leftCorrection, GOBACK_SPEED + rightCorrection);
 
       // Upating current left and right ticks since the beginning
       // of the iteration
@@ -228,15 +229,11 @@ int main() {
   driveForward();
 
   double displacement = sqrt(pow(dX, 2) + pow(dY, 2));
-  int currentLeftTicks;
-  int currentRightTicks;
-  drive_getTicks(&currentLeftTicks, &currentRightTicks);
-  double angle = (currentLeftTicks - currentRightTicks)/0.568;
-  printf("displacement: %.2f, angle: %.2f\n", displacement, angle);
-
+  double angle = atan(dY / dX);
+  printf("displacement: %.2f mm, angle: %.2f rad\n", displacement, angle);
+  pause(2000);
   drive_goto(52, -51);
 
   returnBack();
-  drive_goto(30,30);
   return 0;
 }
