@@ -4,202 +4,156 @@
 #include <stdlib.h>
 
 
-#define FORWARD_SPEED 30
-#define GOBACK_SPEED 82
-#define KP_BACKWARD 2
-#define Bai 0
-
-#define INC_DELAY_FACTOR 5
-
-#define ROBOT_WIDTH 105.8
-#define TICKS_TO_MM 3.249
-
-typedef struct node {
+typedef struct each {
   int leftTicks;
   int rightTicks;
-  struct node *next;
-} TicksDiffLinked;
+  struct each *next;
+} linkedList;
 
+linkedList *head = NULL;
 
-TicksDiffLinked *head = NULL;
+int preLTicks = 0;
+int preRTicks = 0;
 int speedCorrection;
-int previousLeftTicks = 0; 
-int previousRightTicks = 0;
-
-double spotDistance[2]={0,0};
-double prevDistance[2]={0,0};
 double dX = 0;
 double dY = 0;
-double spotAngle = 0;
 double distanceWheels[2]={0,0};
-double coord[3]={0,0,0};
+double coordiante[2]={0,0};
+double coordAngle = 0;
+double currentDistance[2]={0,0};
+double prevDistance[2]={0,0};
+double currentAngle = 0;
 
-
-void getDistanceWheels()
+void distanceDiff()
 {
-  int ticksList[2];
-  drive_getTicks(&ticksList[0], &ticksList[1]);
-  distanceWheels[0] = (double) (ticksList[0]) * TICKS_TO_MM;
-  distanceWheels[1] = (double) (ticksList[1]) * TICKS_TO_MM;
+  int templist[2];
+  drive_getTicks(&templist[0], &templist[1]);
+  distanceWheels[0] = (double) (templist[0]) * 3.249;
+  distanceWheels[1] = (double) (templist[1]) * 3.249;
 }
 
-double getAngleChange()
+double radiusFromMiddle(double currentAngle)
 {
-  return (distanceWheels[0] - distanceWheels[1]) / ROBOT_WIDTH;
-}
-
-double radiusMiddle(double spotAngle)
-{
-  if(spotAngle != 0)
+  if(currentAngle != 0)
   {
-    double radiusLeft = spotDistance[0] / spotAngle;       
-    double radiusRight = spotDistance[1] / spotAngle;
-    return (radiusLeft + radiusRight) / 2;
+    double rLeft = currentDistance[0] / currentAngle;       
+    double rRight = currentDistance[1] / currentAngle;
+    return (rLeft + rRight) / 2;
   }
-}
-
-void getCoordinates()
-{
-  getDistanceWheels();
-  double deltaAngle = getAngleChange();
-  double r = radiusMiddle(spotAngle);
-
-  if (deltaAngle == 0 || spotAngle == 0) {
-    coord[0] = spotDistance[0];
-    coord[1] = 0;
-  }
-  else {
-    coord[0] = r * sin(spotAngle + deltaAngle) - r * sin(spotAngle);
-    coord[1] = r * cos(spotAngle + deltaAngle) - r * cos(spotAngle);
-  }
-  coord[2] = deltaAngle;
-  spotAngle = deltaAngle;
-}
-
-void calculateCoordinates()
-{
-  getDistanceWheels();
-  spotDistance[0] = distanceWheels[0] - prevDistance[0];
-  spotDistance[1] = distanceWheels[1] - prevDistance[1];
-  prevDistance[0] = distanceWheels[0];
-  prevDistance[1] = distanceWheels[1];
-
-  getCoordinates(); 
-  dX += coord[0];
-  dY += coord[1];
-  spotAngle = coord[2];
-}
-
-int infraredDelta() {
-  int left = 0;
-  int right = 0;
-
-
-  for (int dacVal = 0; dacVal < 160; dacVal += 8) {
-    dac_ctr(26, 0, dacVal);
-    freqout(11, 1, 38000);
-    left += input(10);
-
-    dac_ctr(27, 1, dacVal);
-    freqout(1, 1, 38000);
-    right += input(2);
-  }
-  return right - left;
-}
-
-
-void tickDeltas(int *leftTicks, int *rightTicks) {
-  int currentLeftTicks;
-  int currentRightTicks;
-  drive_getTicks(&currentLeftTicks, &currentRightTicks);
-
-  *leftTicks = currentLeftTicks - previousLeftTicks;
-  *rightTicks = currentRightTicks - previousRightTicks;
-
-  previousLeftTicks = currentLeftTicks;
-  previousRightTicks = currentRightTicks;
 }
 
 void pushTicks(int rightTicks, int leftTicks) {
-  TicksDiffLinked *new = malloc(sizeof(TicksDiffLinked));
+  linkedList *new = malloc(sizeof(linkedList));
   (*new).leftTicks = leftTicks;
   (*new).rightTicks = rightTicks;
   (*new).next = head;
   head = new;
 }
 
-void driveForward() {
+void getCoordinates()
+{
+  double deltaAngle;
+  double r;
+  deltaAngle = (distanceWheels[0] - distanceWheels[1]) / 105.8;
+  r = radiusFromMiddle(currentAngle);
+  if (deltaAngle == 0 || currentAngle == 0) {
+    coordiante[0] = currentDistance[0];
+    coordiante[1] = 0;
+  }
+
+  else 
+  {
+    coordiante[0] = r * sin(currentAngle + deltaAngle) - r * sin(currentAngle);
+    coordiante[1] = r * cos(currentAngle + deltaAngle) - r * cos(currentAngle);
+  }
+  coordAngle = deltaAngle;
+  currentAngle = deltaAngle;
+}
+
+void calculateCoordinates()
+{
+  distanceDiff();
+  currentDistance[1] = distanceWheels[1] - prevDistance[1];
+  currentDistance[0] = distanceWheels[0] - prevDistance[0];
+  prevDistance[1] = distanceWheels[1];
+  prevDistance[0] = distanceWheels[0];
+  getCoordinates(); 
+  dY += coordiante[1];
+  dX += coordiante[0];
+  currentAngle = coordAngle;
+}
+
+int infraredDiff() {
+  int leftdis = 0;
+  int rightdis = 0;
+  for (int dacVal = 0; dacVal < 160; dacVal += 8) 
+  {
+    dac_ctr(26, 0, dacVal);
+    freqout(11, 1, 38000);
+    leftdis = leftdis + input(10);
+    dac_ctr(27, 1, dacVal);
+    freqout(1, 1, 38000);
+    rightdis = rightdis + input(2);
+  }
+  return rightdis - leftdis;
+}
 
 
-  for (int delay_increment = 0; ping_cm(8) > 12; delay_increment++){
+void tickDiff(int *leftTicks, int *rightTicks) {
+  int currentLeftTicks, currentRightTicks;
+  drive_getTicks(&currentLeftTicks, &currentRightTicks);
+  *leftTicks = currentLeftTicks - preLTicks;
+  *rightTicks = currentRightTicks - preRTicks;
+  preLTicks = currentLeftTicks;
+  preRTicks = currentRightTicks;
+}
+
+
+void driveForward(int speed) {
+
+  for (int delay_increment = 0; ping_cm(8) > 11; delay_increment++){
   
-    speedCorrection = infraredDelta() ;
-  
-    drive_speed(FORWARD_SPEED + speedCorrection, FORWARD_SPEED - speedCorrection);
-  
-  
-    if (delay_increment % INC_DELAY_FACTOR == 0) {
+    speedCorrection = infraredDiff() * 0.75;
+    drive_speed(speed + speedCorrection, speed - speedCorrection);
+    if (delay_increment % 30 == 0) {
       int currentLeft;
       int currentRight;
-      tickDeltas(&currentLeft, &currentRight);
+      tickDiff(&currentLeft, &currentRight);
       pushTicks(currentRight, currentLeft);
       calculateCoordinates();
     }
   }
-
-
   drive_speed(0, 0);
 }
 
-void updateTickDeltas() {
-  int currentLeftTicks;
-  int currentRightTicks;
-  drive_getTicks(&currentLeftTicks, &currentRightTicks);
-  previousLeftTicks = currentLeftTicks;
-  previousRightTicks = currentRightTicks;
-}
 
-void returnBack() {
+void goBack(int speed) {
+  int curLeftTicks;
+  int curRightTicks;
+  drive_getTicks(&curLeftTicks, &curRightTicks);
+  preLTicks = curLeftTicks;
+  preRTicks = curRightTicks;
 
-  updateTickDeltas();
-
-
-  int leftCorrection;
-  int rightCorrection;
-
-  int currentLeftTicks;
-  int currentRightTicks;
-
-  int leftTicksRemaining;
-  int rightTicksRemaining;
-
-  TicksDiffLinked *iterator = head;
-  while (iterator) {
-  
-    currentLeftTicks = 0;
+  int currentLeftTicks, currentRightTicks;
+  int leftCorrection,rightCorrection;
+  int leftTicksLeft, rightTicksLeft;
+  linkedList *iterator = head;
+  while (iterator!= NULL) 
+  {
     currentRightTicks = 0;
-    leftTicksRemaining = (*iterator).leftTicks;
-    rightTicksRemaining = (*iterator).rightTicks;
-  
-    while (currentLeftTicks <= (leftTicksRemaining+Bai) 
-            && currentRightTicks <= (rightTicksRemaining+Bai)) {
+    currentLeftTicks = 0;
+    rightTicksLeft = (*iterator).rightTicks;
+    leftTicksLeft = (*iterator).leftTicks;
+    while (currentLeftTicks < (leftTicksLeft + 2) 
+            && currentRightTicks < (rightTicksLeft + 2)) {
     
-      leftCorrection = KP_BACKWARD * (currentLeftTicks - (leftTicksRemaining +Bai));
-      rightCorrection = KP_BACKWARD * (currentRightTicks - (rightTicksRemaining +Bai));
-    
-      drive_speed(GOBACK_SPEED + leftCorrection, GOBACK_SPEED + rightCorrection);
-    
+      drive_speed(speed + 3.7 * (currentLeftTicks - (leftTicksLeft + 1)), speed + 3.7 * (currentRightTicks - (rightTicksLeft + 1)));
       drive_getTicks(&currentLeftTicks, &currentRightTicks);
-      currentLeftTicks -= previousLeftTicks;
-      currentRightTicks -= previousRightTicks;
+      currentLeftTicks = currentLeftTicks - preLTicks;
+      currentRightTicks = currentRightTicks - preRTicks;
     }
-  
-  
-  
-    drive_getTicks(&previousLeftTicks, &previousRightTicks);
+    drive_getTicks(&preLTicks, &preRTicks);
     iterator = (*iterator).next;
   }
-
-
   drive_speed(0, 0);
 }
