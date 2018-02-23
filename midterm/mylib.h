@@ -13,15 +13,15 @@ linkedList *head = NULL;
 int preLTicks = 0;
 int preRTicks = 0;
 int speedCorrection;
-double dX = 0;
-double dY = 0;
-double distanceWheelsl = 0;
-double distanceWheelsr = 0;
-double coordiante[2]={0,0};
-double coordAngle = 0;
-double currentDistance[2]={0,0};
-double prevDistance[2]={0,0};
-double currentAngle = 0;
+float dX = 0;
+float dY = 0;
+float distanceWheelsl = 0;
+float distanceWheelsr = 0;
+float coordiante[2]={0,0};
+float coordAngle = 0;
+float currentDistance[2]={0,0};
+float prevDistance[2]={0,0};
+float currentAngle = 0;
 
 void distanceDiff()
 {
@@ -31,13 +31,17 @@ void distanceDiff()
   distanceWheelsr = templist[1] * 3.249;
 }
 
-double radiusFromMiddle(double currentAngle)
+float radiusFromMiddle(float currentAngle)
 {
   if(currentAngle != 0)
   {
-    double rLeft = currentDistance[0] / currentAngle;       
-    double rRight = currentDistance[1] / currentAngle;
+    float rLeft = currentDistance[0] / currentAngle;       
+    float rRight = currentDistance[1] / currentAngle;
     return (rLeft + rRight) / 2;
+  }
+  else
+  {
+	return 999.0;
   }
 }
 
@@ -51,7 +55,7 @@ void tickDiff(int *leftTicks, int *rightTicks) {
 }
 
 void addTicksList(int rightTicks, int leftTicks) {
-  linkedList *new = malloc(sizeof(linkedList));
+  linkedList *new = malloc(sizeof(linkedList)*2);
   (*new).leftTicks = leftTicks;
   (*new).rightTicks = rightTicks;
   (*new).nextNode = head;
@@ -60,8 +64,8 @@ void addTicksList(int rightTicks, int leftTicks) {
 
 void getCoordinates()
 {
-  double deltaAngle;
-  double r;
+  float deltaAngle;
+  float r;
   deltaAngle = (distanceWheelsl - distanceWheelsr) / 105.8;
   r = radiusFromMiddle(currentAngle);
   if (deltaAngle == 0 || currentAngle == 0) {
@@ -107,20 +111,31 @@ int infraredDiff() {
 }
 
 void driveForward(int speed) {
-
-  for (int interval = 0; ping_cm(8) > 11; interval++){
+  int interval = 0;
+  while (ping_cm(8) > 11)
+  {
+    interval += 1;
     speedCorrection = infraredDiff() * 0.75;
     drive_speed(speed + speedCorrection, speed - speedCorrection);
-    if (interval % 30 == 0) 
+    if (interval == 30) 
     {
       int currentLeft;
       int currentRight;
       tickDiff(&currentLeft, &currentRight);
       addTicksList(currentRight, currentLeft);
       calculateCoordinates();
+      interval = 0;
     }
   }
   drive_speed(0, 0);
+}
+float getdX()
+{
+  return dX;
+}
+float getdY()
+{
+  return dY;
 }
 
 void goBack(int speed) {
