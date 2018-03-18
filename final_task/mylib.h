@@ -342,8 +342,7 @@ void goBack()
         }
         else if (pathsStack[idxpath][0]==a-1) {
             // goFront();
-            strightpath[c] = 1;
-            c = c +1;
+            
             if (dir==1) 
                 // goBack();
                 {strightpath[c] = 4;
