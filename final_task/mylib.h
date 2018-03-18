@@ -17,12 +17,13 @@ int queue[300][2];
 void depthfirst(int x,int y,int direction) {
     int irRight,irLeft,distance;
     distance = ping_cm(8);
-    freqout(11, 1, 38000);                      // Left IR LED light
-    irLeft = input(10);                         // Check left IR detector
-    freqout(1, 1, 38000);                       // Repeat for right detector
-    irRight = input(2);
+    drive_goto(-25, 26);
+    irLeft =  ping_cm(8);
+    drive_goto(51, -51);
+    irRight =  ping_cm(8);
+    drive_goto(-26, 25);
    
-   if (irLeft==0) {//starts to check on he sides
+   if (irLeft<=40) {//starts to check on he sides
         if (direction==1){
             neighbours[x][y][3]=-1;
         }
@@ -36,7 +37,7 @@ void depthfirst(int x,int y,int direction) {
            neighbours[x][y][2]=-1;
        }
     }
-    if (irLeft==0) {//starts to check on he sides
+    if (irLeft<=40) {//starts to check on he sides
         if (direction==1){
             neighbours[x][y][3]=-1;
         }
@@ -50,7 +51,7 @@ void depthfirst(int x,int y,int direction) {
            neighbours[x][y][2]=-1;
        }
     }
-    if (irLeft==1) {//starts to check on he sides
+    if (irLeft>=40) {//starts to check on he sides
         if (direction==1){
             if (neighbours[x][y][3]!= -1)
                 neighbours[x][y][3]=1;
@@ -72,7 +73,7 @@ void depthfirst(int x,int y,int direction) {
            neighbours[x][y+1][3]=1;
        }
     }
-    if (irRight==1) {
+    if (irRight>=40) {
         if (direction==1){
              if (neighbours[x][y][2]!= -1)
             neighbours[x][y][2]=1;
@@ -140,7 +141,7 @@ void depthfirst(int x,int y,int direction) {
             }
         }
      }
-     if (irLeft==1) {
+     if (irLeft>=40) {
         if (direction==1) {
             if (visit[x][y-1]==0) {
             drive_goto(-26,25);
@@ -170,7 +171,7 @@ void depthfirst(int x,int y,int direction) {
             }
         }
      }
-     if (irRight==1) {
+     if (irRight>=40) {
         if (direction==1) {
             if (visit[x][y+1]==0) {
             drive_goto(26,-25);
